@@ -1,17 +1,25 @@
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-import time
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import json
-
+from selenium.webdriver.common.keys import Keys
+import time
 chrome_options = Options()
 chrome_options.add_argument("--head")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
 
 driver = webdriver.Chrome(options=chrome_options)
+wait = WebDriverWait(driver, 10)  # 10 seconds wait
+
 driver.get("https://www.myscheme.gov.in/search/category/Agriculture%2CRural%20%26%20Environment")
-time.sleep(5)  # wait for JS to load
+# Wait until the cards are present instead of sleep
+input_box = driver.find_element(By.NAME, "query")
+driver.execute_script("arguments[0].setAttribute('value', 'kisan');", input_box)
+# time.sleep(10)
+wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.p-4")))
 
 cards = driver.find_elements(By.CSS_SELECTOR, "div.p-4")
 schemes = []
@@ -34,7 +42,8 @@ for i in range(len(cards)):
 
         # Go to scheme page
         driver.get(link)
-        time.sleep(3)
+        # Wait until the details section is present
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div#details")))
 
         try:
             details = driver.find_element(By.CSS_SELECTOR, "div#details").text
@@ -57,16 +66,15 @@ for i in range(len(cards)):
 
         # Go back to main page
         driver.back()
-        time.sleep(2)
+        # Wait until the cards are present again
+        wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.p-4")))
 
     except Exception as e:
         print("Error:", e)
         continue
-
 
 driver.quit()
 
 # Save to JSON
 with open("scheme.json", "w", encoding="utf-8") as f:
     json.dump(schemes, f, ensure_ascii=False, indent=4)
-
