@@ -1,5 +1,4 @@
 import requests
-import json
 from datetime import datetime
 from langchain_core.tools import tool
 import os
@@ -84,56 +83,3 @@ class DataGovScraper:
             
         except Exception as e:
             return f"❌ Error: {str(e)}"
-
-# Initialize scraper
-production_scraper = DataGovScraper()
-
-@tool("get_market_price")
-def getMarketPrice(crop: str = "tomato", location: str = "") -> str:
-    """Get current market price from Data.gov.in government database.
-    
-    Args:
-        crop: Name of the crop (tomato, wheat, rice, maize, cotton, etc.)
-        location: State/location (optional - will find best available match)
-    
-    Returns:
-        Current government market price with location and market details
-    """
-    return production_scraper.get_market_price(crop, location)
-
-@tool("get_crop_locations")  
-def getCropLocations(crop: str = "tomato") -> str:
-    """Find which states have data for a specific crop"""
-    
-    try:
-        params = {
-            'api-key': production_scraper.api_key,
-            'format': 'json',
-            'limit': '200'
-        }
-        
-        response = production_scraper.session.get(production_scraper.api_url, params=params, timeout=15)
-        
-        if response.status_code == 200:
-            data = response.json()
-            records = data.get('records', [])
-            
-            # Find states with this crop
-            states_with_crop = set()
-            for record in records:
-                commodity = str(record.get('commodity', '')).lower()
-                state = record.get('state', '')
-                
-                if crop.lower() in commodity:
-                    states_with_crop.add(state)
-            
-            if states_with_crop:
-                states_list = ', '.join(sorted(states_with_crop))
-                return f"📍 {crop.title()} price data available in: {states_list}"
-            else:
-                return f"❌ No {crop} data found in current dataset"
-        
-        return f"❌ Error fetching location data"
-        
-    except Exception as e:
-        return f"❌ Error: {str(e)}"
