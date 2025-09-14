@@ -143,7 +143,7 @@ def should_continue(state: State) -> str:
     
     # Check for tool calls
     if hasattr(last_message, 'tool_calls') and last_message.tool_calls:
-        print(f"Tools to call: {[call['name'] for call in last_message.tool_calls]}")
+        # print(f"Tools to call: {[call['name'] for call in last_message.tool_calls]}")
         return "tools"
     
     # Check if we have tool results to process
@@ -182,8 +182,8 @@ def get_response():
     #     "messages": conversation_memory.copy()
     # }
     state = {
-        "transcript":"aalu kitne ka hai punjab ma?",
-        "language":"hindi",
+        "transcript":"I have a small piece of land in my name, but I often struggle to arrange money for seeds and fertilizers before every season. Is there any government scheme that can give me some regular financial support directly into my bank account?",
+        "language":"English",
         "response": "",
         "messages": conversation_memory.copy()
     }
@@ -193,12 +193,13 @@ def get_response():
         final_state = chatbot.invoke(state)
         answer = final_state.get("response", "No response generated")
         conversation_memory[:] = final_state['messages']
-        print(conversation_memory[:])
+        # print(conversation_memory[:])
         # audio = text_to_speech(answer)
         # if audio:
         #     with open("response231311rsdgfhjk.mp3", "wb") as f:
         #         f.write(audio)
-        
+        # print(answer)
+        print(final_state)
         return answer
         
     except Exception as e:
