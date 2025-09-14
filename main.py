@@ -1,5 +1,5 @@
 from models import speech_to_text, text_to_speech
-from utils import Base_llm, generate_1_res_prompt
+from utils import Base_llm, generate_1_res_prompt,tools
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
@@ -10,41 +10,6 @@ import re
 
 Audio_file = "farmer_response.mp3"
 
-# -------------------------------
-# Enhanced Tools with Better Descriptions
-# -------------------------------
-@tool("get_market_price")
-def getMarketPrice(crop: str = "tomato", location: str = "delhi") -> str:
-    """Get current market price for a specific crop in a location.
-    
-    Args:
-        crop: Name of the crop (tomato, wheat, rice, etc.)
-        location: Location/city name (delhi, mumbai, bangalore, etc.)
-    
-    Returns:
-        Current market price information
-    """
-    return f"Current {crop} price in {location}: 2000 Rs/quintal"
-
-@tool("get_government_schemes") 
-def getGovSchemes(scheme_type: str = "general") -> str:
-    """Get information about government schemes for farmers.
-    
-    Args:
-        scheme_type: Type of scheme (general, subsidy, loan, insurance)
-    
-    Returns:
-        Information about available government schemes
-    """
-    schemes = {
-        "general": "PM-Kisan Yojana, Pradhan Mantri Fasal Bima Yojana",
-        "subsidy": "Fertilizer Subsidy Scheme, Seed Subsidy Program",
-        "loan": "Kisan Credit Card, Agricultural Term Loan",
-        "insurance": "Pradhan Mantri Fasal Bima Yojana"
-    }
-    return f"Available {scheme_type} schemes: {schemes.get(scheme_type, schemes['general'])}"
-
-tools = [getMarketPrice, getGovSchemes]
 llm_with_tools = Base_llm.bind_tools(tools)
 
 # -------------------------------
