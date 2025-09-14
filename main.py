@@ -12,6 +12,8 @@ Audio_file = "Farmer_question1.mp3"
 
 llm_with_tools = Base_llm.bind_tools(tools)
 
+conversation_memory = []
+
 # -------------------------------
 # State
 # -------------------------------
@@ -106,8 +108,6 @@ def process_tool_results(state: State) -> State:
             response = Base_llm.invoke([HumanMessage(content=formatted_prompt)])
             resp_text = response.content if hasattr(response, "content") else str(response)
             
-            print("LLM raw output with tools:", resp_text)
-            
             # Parse JSON response
             try:
                 parsed = json.loads(resp_text)
@@ -179,20 +179,21 @@ def get_response():
     #     "transcript": Document.page_content,
     #     "language":Document.metadata['language'],
     #     "response": "",
-    #     "messages": [] 
+    #     "messages": conversation_memory.copy()
     # }
     state = {
-        "transcript": Document.page_content,
-        "language":Document.metadata['language'],
+        "transcript":"aalu kitne ka hai punjab ma?",
+        "language":"hindi",
         "response": "",
-        "messages": [] 
+        "messages": conversation_memory.copy()
     }
     
     try:
         print(f"🤔 Processing: {state['transcript']}")
         final_state = chatbot.invoke(state)
         answer = final_state.get("response", "No response generated")
-        
+        conversation_memory[:] = final_state['messages']
+        print(conversation_memory[:])
         # audio = text_to_speech(answer)
         # if audio:
         #     with open("response231311rsdgfhjk.mp3", "wb") as f:
@@ -207,4 +208,5 @@ def get_response():
         return "Error processing request"
 
 if __name__ == "__main__":
+
     get_response()

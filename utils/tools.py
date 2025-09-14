@@ -1,6 +1,6 @@
 import json
 from langchain.tools import tool
-from models import DataGovScraper,load_model,predict_image,model_path,device,classes
+from models import DataGovScraper,load_model,predict_image,model_path,device,classes,load_model_wheat,predict_image_wheat,wheat_model_path,class_names
 import os
 
 
@@ -78,12 +78,19 @@ def getGovSchemes(scheme_type: str = "general") -> str:
     return f"Available {scheme_type} schemes: {schemes.get(scheme_type, schemes['general'])}"
 
 
-@tool(description="")
+@tool(description="Disease detection for {classes}")
 def disease_Detect():
     image_path = r"test\test\AppleCedarRust1.JPG"
     model = load_model(model_path, num_classes=len(classes), device=device)
     prediction = predict_image(model, image_path, device=device)
+    return prediction
 
 
+@tool("Disease detection for wheat")
+def Wheat_disease_detection():
+    img_path = r"aphid_33.png"
+    model = load_model_wheat(wheat_model_path, num_classes=len(class_names), device=device)
+    label = predict_image_wheat(str(img_path), model, class_names, device)
+    return label
 
-tools = [ getGovSchemes,getCropLocations,getMarketPrice,disease_Detect]
+tools = [ getGovSchemes,getCropLocations,getMarketPrice,disease_Detect,Wheat_disease_detection]
