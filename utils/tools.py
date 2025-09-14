@@ -1,6 +1,8 @@
 import json
 from langchain.tools import tool
-from models import DataGovScraper
+from models import DataGovScraper,load_model,predict_image,model_path,device,classes
+import os
+
 
 
 scraper = DataGovScraper()
@@ -76,6 +78,12 @@ def getGovSchemes(scheme_type: str = "general") -> str:
     return f"Available {scheme_type} schemes: {schemes.get(scheme_type, schemes['general'])}"
 
 
+@tool(description="")
+def disease_Detect():
+    image_path = r"test\test\AppleCedarRust1.JPG"
+    model = load_model(model_path, num_classes=len(classes), device=device)
+    prediction = predict_image(model, image_path, device=device)
 
 
-tools = [ getGovSchemes,getCropLocations,getMarketPrice]
+
+tools = [ getGovSchemes,getCropLocations,getMarketPrice,disease_Detect]

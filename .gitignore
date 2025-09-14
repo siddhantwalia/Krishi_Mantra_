@@ -8,3 +8,5 @@ __pycache__
 models\__pycache__
 utils\__pycache__
 market_prices.db
+test
+.zip

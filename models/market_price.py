@@ -22,20 +22,20 @@ class DataGovScraper:
             params = {
                 'api-key': self.api_key,
                 'format': 'json',
-                'limit': '100',  # Get more records for better matching
+                'limit': '10000000000',  # Get more records for better matching
                 'offset': '0'
             }
             
             response = self.session.get(self.api_url, params=params, timeout=15)
             
             if response.status_code != 200:
-                return f"❌ API Error: HTTP {response.status_code}"
+                return f"API Error: HTTP {response.status_code}"
             
             data = response.json()
             records = data.get('records', [])
             
             if not records:
-                return f"❌ No data available from Data.gov.in"
+                return f"No data available from Data.gov.in"
             
             # Smart matching logic
             crop_matches = []

@@ -8,7 +8,7 @@ from typing import TypedDict, List
 import json
 import re
 
-Audio_file = "farmer_response.mp3"
+Audio_file = "Farmer_question1.mp3"
 
 llm_with_tools = Base_llm.bind_tools(tools)
 
@@ -174,7 +174,13 @@ chatbot = graph.compile()
 # Run pipeline
 # -------------------------------
 def get_response():
-    Document = speech_to_text(Audio_file)
+    # Document = speech_to_text(Audio_file)
+    # state = {
+    #     "transcript": Document.page_content,
+    #     "language":Document.metadata['language'],
+    #     "response": "",
+    #     "messages": [] 
+    # }
     state = {
         "transcript": Document.page_content,
         "language":Document.metadata['language'],
@@ -187,10 +193,10 @@ def get_response():
         final_state = chatbot.invoke(state)
         answer = final_state.get("response", "No response generated")
         
-        audio = text_to_speech(answer)
-        if audio:
-            with open("response231311.mp3", "wb") as f:
-                f.write(audio)
+        # audio = text_to_speech(answer)
+        # if audio:
+        #     with open("response231311rsdgfhjk.mp3", "wb") as f:
+        #         f.write(audio)
         
         return answer
         
