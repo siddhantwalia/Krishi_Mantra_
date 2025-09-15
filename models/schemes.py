@@ -7,29 +7,51 @@ import json
 from selenium.webdriver.common.keys import Keys
 import time
 chrome_options = Options()
-chrome_options.add_argument("--head")
+# chrome_options.add_argument("--head")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
 
 driver = webdriver.Chrome(options=chrome_options)
-wait = WebDriverWait(driver, 10)  # 10 seconds wait
+wait = WebDriverWait(driver, 60)  # 10 seconds wait
 
 driver.get("https://www.myscheme.gov.in/search/category/Agriculture%2CRural%20%26%20Environment")
 # Wait until the cards are present instead of sleep
 input_box = driver.find_element(By.NAME, "query")
 driver.execute_script("arguments[0].setAttribute('value', 'kisan');", input_box)
-# time.sleep(10)
-wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.p-4")))
 
+wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.p-4")))
 cards = driver.find_elements(By.CSS_SELECTOR, "div.p-4")
+# time.sleep(10)
+# print(len(cards))
 schemes = []
 
-for i in range(len(cards)):
-    # Re-fetch cards to avoid stale element reference
-    cards = driver.find_elements(By.CSS_SELECTOR, "div.p-4")
-    card = cards[i]
 
+# click the button
+# for x in range(2):
+    # path = driver.find_element(By.XPATH, "//svg[@class='ml-2 text-darkblue-900 dark:text-white cursor-pointer']/*[name()='path'][2]")
+    # path.click()
+    # time.sleep(3)
+for i in range(len(cards)):
+    time.sleep(0.5)
+    search_input = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, "input[name='query']"))
+    )
+
+    # clear and type 'kisan'
+    search_input.clear()
+    search_input.send_keys("kisan")
+
+    # wait until the button becomes clickable
+    search_button = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.CSS_SELECTOR, "button[aria-label='Search']"))
+    )
+    search_button.click()
+    time.sleep(1)
+
+    cards = driver.find_elements(By.CSS_SELECTOR, "div.p-4")
+    print(len(cards))
     try:
+        card = cards[i]
         title_tag = card.find_element(By.CSS_SELECTOR, "h2[id^='scheme-name'] a")
         title = title_tag.text
         link = title_tag.get_attribute("href")
@@ -72,9 +94,13 @@ for i in range(len(cards)):
     except Exception as e:
         print("Error:", e)
         continue
+# path = driver.find_element(By.XPATH, "//svg[@class='ml-2 text-darkblue-900 dark:text-white cursor-pointer']/*[name()='path'][2]")
+# path.click()
+
 
 driver.quit()
 
 # Save to JSON
-with open("scheme.json", "w", encoding="utf-8") as f:
+with open("schemeas.json", "w", encoding="utf-8") as f:
     json.dump(schemes, f, ensure_ascii=False, indent=4)
+    print("sasda")
