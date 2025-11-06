@@ -2,7 +2,8 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Optional
 import traceback
-from main import chatbot    
+from main import chatbot
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title="Farming Chatbot API",
@@ -10,11 +11,25 @@ app = FastAPI(
     version="1.0"
 )
 
+origins = [
+    "http://localhost:3000",  # Standard React port
+    "http://localhost:5173",  # Standard Vite React port
+    "*"  # Allow all (use only for development)
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 class ChatRequest(BaseModel):
     transcript: str
     language: Optional[str] = "English"
-    thread_id : str
+    thread_id: str
 
 
 @app.get("/")
@@ -26,7 +41,9 @@ def home():
 def health():
     return {"status": "healthy"}
 
+
 from langgraph.types import RunnableConfig
+
 
 @app.post("/chat")
 def chat_endpoint(request: ChatRequest):
