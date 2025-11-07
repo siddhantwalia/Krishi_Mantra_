@@ -1,10 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
 from typing import Optional
 import traceback
 from main import chatbot
 from fastapi.middleware.cors import CORSMiddleware
-
+import shutil
+import os
+from pathlib import Path
+import time
 app = FastAPI(
     title="Farming Chatbot API",
     description="API interface for the LangGraph-based farming assistant chatbot.",
@@ -78,5 +81,33 @@ def chat_endpoint(request: ChatRequest):
 
     except Exception as e:
         print("Error during /chat:", e)
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/upload")
+async def upload_image(file: UploadFile = File(...)):
+    try:
+        # Create uploads directory if it doesn't exist
+        upload_dir = Path("uploads")
+        upload_dir.mkdir(exist_ok=True)
+
+        # Generate unique filename
+        file_extension = os.path.splitext(file.filename)[1]
+        unique_filename = f"{int(time.time())}_{file.filename}"
+        file_path = upload_dir / unique_filename
+
+        # Save file
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        return {
+            "success": True,
+            "file_path": str(file_path),
+            "filename": unique_filename
+        }
+
+    except Exception as e:
+        print("Error during upload:", e)
         traceback.print_exc()
         return {"success": False, "error": str(e)}
