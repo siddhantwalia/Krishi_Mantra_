@@ -1,9 +1,15 @@
 from langchain_core.prompts import PromptTemplate
 
 generate_1_res_prompt = PromptTemplate(
-    input_variables=["transcript", "language"],
+    input_variables=["transcript", "language"],   # only dynamic vars
+    partial_variables={
+        "conversation_history": ""               # default empty; injected later
+    },
     template="""
 You are Krishi Mitra, a helpful assistant talking to a farmer.
+
+Here is the recent conversation so far:
+{conversation_history}
 
 The farmer said the following:
 
