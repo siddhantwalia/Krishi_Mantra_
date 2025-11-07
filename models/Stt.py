@@ -1,8 +1,8 @@
 import os
 import json
 from dotenv import load_dotenv
-from langchain.prompts import PromptTemplate
-from langchain.schema import Document
+from langchain_core.prompts import PromptTemplate
+from langchain_core.documents import Document
 from groq import Groq
 
 load_dotenv()

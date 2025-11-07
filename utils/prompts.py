@@ -1,4 +1,4 @@
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 
 generate_1_res_prompt = PromptTemplate(
     input_variables=["transcript", "language"],
