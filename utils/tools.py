@@ -7,22 +7,26 @@ import pandas as pd
 
 scraper = DataGovScraper()
 
+# Fixed image paths
+FIXED_IMAGE_PATH = "uploaded_image.jpg"
+FIXED_WHEAT_IMAGE_PATH = "uploaded_image.jpg"
 
-@tool(description="get_market_price")
+
+@tool("get_market_price")
 def getMarketPrice(crop: str = "tomato", location: str = "") -> str:
     """Get current market price from Data.gov.in government database.
-    
+
     Args:
         crop: Name of the crop (tomato, wheat, rice, maize, cotton, etc.)
         location: State/location (optional - will find best available match)
-    
+
     Returns:
         Current government market price with location and market details
     """
     return scraper.get_market_price(crop, location)
 
 
-@tool()
+@tool("get_crop_locations")
 def getCropLocations(crop: str = "tomato") -> str:
     """Find which states have data for a specific crop"""
 
@@ -60,34 +64,44 @@ def getCropLocations(crop: str = "tomato") -> str:
         return f"❌ Error: {str(e)}"
 
 
-@tool()
-def disease_Detect(image_path: str):
-    """Detect plant diseases from an uploaded image.
-        This runs by default if an image is uploaded and wheat is not specified.
-    Args:
-        image_path: Path to the uploaded plant image
+@tool("disease_Detect")
+def disease_Detect() -> str:
+    """Detect plant diseases from the uploaded image.
+    User must upload an image first. The image is automatically saved to a fixed location.
 
     Returns:
         Disease diagnosis and treatment recommendations
     """
-    model = load_model(model_path, num_classes=len(classes), device=device)
-    prediction = predict_image(model, image_path, device=device)
-    return prediction
+    print("disease tool called")
+    try:
+        if not os.path.exists(FIXED_IMAGE_PATH):
+            return "❌ No image found. Please upload a plant image first."
+
+        model = load_model(model_path, num_classes=len(classes), device=device)
+        prediction = predict_image(model, FIXED_IMAGE_PATH, device=device)
+        return prediction
+    except Exception as e:
+        return f"❌ Error analyzing image: {str(e)}"
 
 
-@tool()
-def Wheat_disease_detection(image_path: str):
-    """Detect wheat-specific diseases from an uploaded image.
-
-    Args:
-        image_path: Path to the uploaded wheat plant image
+@tool("Wheat_disease_detection")
+def Wheat_disease_detection() -> str:
+    """Detect wheat-specific diseases from the uploaded image.
+    User must upload an image first. The image is automatically saved to a fixed location.
 
     Returns:
         Wheat disease diagnosis and recommendations
     """
-    model = load_model_wheat(wheat_model_path, num_classes=len(class_names), device=device)
-    label = predict_image_wheat(image_path, model, class_names, device)
-    return label
+    print("Wheat disease tool called")
+    try:
+        if not os.path.exists(FIXED_IMAGE_PATH):
+            return "❌ No image found. Please upload a wheat plant image first."
+
+        model = load_model_wheat(wheat_model_path, num_classes=len(class_names), device=device)
+        label = predict_image_wheat(FIXED_IMAGE_PATH, model, class_names, device)
+        return label
+    except Exception as e:
+        return f"❌ Error analyzing wheat image: {str(e)}"
 
 
 @tool(description="Fetch all available schemes with description and link")
@@ -121,4 +135,6 @@ def Scheme_detials(correct_link: str):
     }
     return output
 
-tools = [getCropLocations,getMarketPrice,disease_Detect,Wheat_disease_detection,Scheme_detials,Find_scheme]
+
+
+tools = [getCropLocations, getMarketPrice, disease_Detect, Wheat_disease_detection, Scheme_detials, Find_scheme]

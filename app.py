@@ -88,23 +88,18 @@ def chat_endpoint(request: ChatRequest):
 @app.post("/upload")
 async def upload_image(file: UploadFile = File(...)):
     try:
-        # Create uploads directory if it doesn't exist
-        upload_dir = Path("uploads")
-        upload_dir.mkdir(exist_ok=True)
+        # Define the static file path in the current directory
+        file_name = "uploaded_image.jpg"
+        file_path = Path(file_name)
 
-        # Generate unique filename
-        file_extension = os.path.splitext(file.filename)[1]
-        unique_filename = f"{int(time.time())}_{file.filename}"
-        file_path = upload_dir / unique_filename
-
-        # Save file
+        # Save file (this will overwrite any existing file)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
         return {
             "success": True,
             "file_path": str(file_path),
-            "filename": unique_filename
+            "filename": file_name
         }
 
     except Exception as e:
