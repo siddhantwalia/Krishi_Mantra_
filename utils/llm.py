@@ -28,3 +28,8 @@ Base_llm = ChatGroq(
     model="qwen/qwen3-32b",
     temperature=0.5
 )
+
+# chotu_llm = ChatGroq(
+#     api_key=GROQ_API_KEY,
+#     model="",
+# )

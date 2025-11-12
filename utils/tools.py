@@ -13,17 +13,18 @@ FIXED_WHEAT_IMAGE_PATH = "uploaded_image.jpg"
 
 
 @tool("get_market_price")
-def getMarketPrice(crop: str = "tomato", location: str = "") -> str:
+def getMarketPrice(crop: str = "tomato", location: str = "",state:str = "") -> str:
     """Get current market price from Data.gov.in government database.
 
     Args:
         crop: Name of the crop (tomato, wheat, rice, maize, cotton, etc.)
-        location: State/location (optional - will find best available match)
+        location: location (optional - will find best available match) (district)
+        state: state (tamil-nadu,punnjab)
 
     Returns:
         Current government market price with location and market details
     """
-    return scraper.get_market_price(crop, location)
+    return scraper.get_market_price(crop, location,state)
 
 
 @tool("get_crop_locations")
