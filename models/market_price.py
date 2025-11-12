@@ -22,11 +22,28 @@ class DataGovScraper:
             params = {
                 'api-key': self.api_key,
                 'format': 'json',
-                'limit': '10000000000',  # Get more records for better matching
+                'limit': '1000',
                 'offset': '0'
             }
             
-            response = self.session.get(self.api_url, params=params, timeout=15)
+            base_url = (
+                f"{self.api_url}?api-key={self.api_key}"
+                f"&format=json&limit=100&offset=0"
+            )
+
+            # Add filters manually — no encoding
+            if crop:
+                base_url += f"&filters[commodity]={crop.capitalize()}"
+            if location:
+                base_url += f"&filters[state]={location.capitalize()}"
+            
+            # https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?
+            # api-key=579b464db66ec23bdd000001c995da8430f247837d07372faf415e26&format=json&limit=100
+            # &filters[commodity]=Tomato&filters[state]=Punjab
+            # print(base_url)
+            response =  self.session.get(base_url, params=params, timeout=15)
+            print("➡️ Final API URL:", response.url)  # Debug line (optional)
+        
             
             if response.status_code != 200:
                 return f"API Error: HTTP {response.status_code}"
