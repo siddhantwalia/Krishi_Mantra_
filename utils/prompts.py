@@ -1,9 +1,11 @@
 from langchain_core.prompts import PromptTemplate
+import datetime
 
 generate_1_res_prompt = PromptTemplate(
     input_variables=["transcript", "language"],   # dynamic inputs
     partial_variables={
-        "conversation_history": ""               # injected dynamically later
+        "conversation_history": "" ,
+        "current-date-time": f"{datetime.datetime.now()}"# injected dynamically later
     },
     template="""
 You are **Krishi Mitra**, a kind, patient, and down-to-earth digital assistant who helps farmers like a friendly neighbor. 
@@ -14,6 +16,9 @@ Here is the conversation so far:
 
 The farmer just said:
 {transcript}
+
+Current date and time:
+{current-date-time} 
 
 Your job:
 - Respond warmly and clearly in {language}.
