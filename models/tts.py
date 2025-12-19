@@ -1,48 +1,36 @@
 import requests
 import os
 from dotenv import load_dotenv
+from groq import Groq
+from pathlib import Path
 
 load_dotenv()
-ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY").strip()
-model = "eleven_multilingual_v2"
+def text_to_speech(text: str) -> bytes | None:
+    """Generates speech using Groq and returns WAV audio bytes."""
+    client = Groq()
 
-
-def text_to_speech(text, voice_id="EXAVITQu4vr4xnSDxMaL"): 
-    """Generates speech using ElevenLabs and returns audio bytes."""
-    if not ELEVENLABS_API_KEY:
-        print("ElevenLabs API key not set.")
-        return None 
-
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-    headers = {
-        "Accept": "audio/mpeg",
-        "xi-api-key": ELEVENLABS_API_KEY,
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "text": text,
-        "model_id": model, 
-        "voice_settings": {
-            "stability": 0.75,      
-            "similarity_boost": 0.75 
-        }
-    }
     try:
-        response = requests.post(url, headers=headers, json=payload, stream=True) # Use stream=True for potentially large audio
-        response.raise_for_status() 
-        return response.content 
-        # ---
+        response = client.audio.speech.create(
+            model="playai-tts",
+            voice="Aaliyah-PlayAI",
+            response_format="wav",
+            input=text,
+        )
 
-    except requests.exceptions.RequestException as e:
-        try:
-             error_details = response.json()
-             print("Error details:", error_details)
-        except:
-             print("Response content:", response.text)
-        return None 
-    
-   
-    
+        # ✅ Groq returns full audio bytes directly
+        audio_bytes = response.read()
+
+        # Optional: save to file
+        speech_file_path = Path(__file__).parent / "speech.wav"
+        with open(speech_file_path, "wb") as f:
+            f.write(audio_bytes)
+
+        return audio_bytes
+
+    except Exception as e:
+        print("TTS Error:", e)
+        return None
+
 # audio = text_to_speech("aapka naam kya hai")
 
 # if audio:

@@ -156,22 +156,16 @@ async def speech_to_text_endpoint(file: UploadFile = File(...)):
             os.unlink(temp_audio_path)
 
 
-# --- NEW TTS ENDPOINT ---
+# --- TTS ENDPOINT ---
 @app.post("/tts")
 async def text_to_speech_endpoint(request: TTSRequest):
-    """
-    Accepts text and returns the spoken audio.
-    """
-    try:
-        audio_bytes = text_to_speech(request.text)
+    audio_bytes = text_to_speech(request.text)
 
-        if audio_bytes:
-            # Return the audio bytes as a streaming response
-            return StreamingResponse(io.BytesIO(audio_bytes), media_type="audio/mpeg")
-        else:
-            raise HTTPException(status_code=500, detail="Failed to generate audio")
+    if not audio_bytes:
+        raise HTTPException(status_code=500, detail="Failed to generate audio")
 
-    except Exception as e:
-        print("Error during /tts:", e)
-        traceback.print_exc()
-        return {"success": False, "error": str(e)}
+    return StreamingResponse(
+        io.BytesIO(audio_bytes),
+        media_type="audio/wav",
+        headers={"Content-Disposition": "inline; filename=speech.wav"}
+    )
