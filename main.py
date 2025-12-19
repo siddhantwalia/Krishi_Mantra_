@@ -4,7 +4,7 @@ import traceback
 # -------------------------------
 # Run pipeline with persistent memory
 # -------------------------------
-def get_response(user_input: str, language="English"):
+def get_response(user_input: str, language="English", thread_id="farmer_session_1"):
     # Initial state matching GraphState
     state = {
         "transcript": user_input,
@@ -16,7 +16,7 @@ def get_response(user_input: str, language="English"):
     }
 
     # Use a unique session key to retain conversation across turns
-    thread_id = "farmer_session_1"
+    # thread_id = "farmer_session_1"
 
     try:
         print(f"🤔 Processing: {state['transcript']}")

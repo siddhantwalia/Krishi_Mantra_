@@ -7,6 +7,7 @@ from utils.state import GraphState
 from utils.llm import Base_llm
 from utils.tools import getMarketPrice, getCropLocations, disease_Detect, Wheat_disease_detection, Find_scheme, Scheme_detials, Weather_tool, FIXED_IMAGE_PATH
 import os
+import re
 
 # --- Helper for extraction ---
 class MarketArgs(BaseModel):
@@ -21,30 +22,25 @@ class SchemeArgs(BaseModel):
     query_type: str = Field(description="Either 'list' to list schemes or 'details' to get details of a specific scheme")
     scheme_link: str = Field(description="Link of the scheme if query_type is 'details'", default="")
 
-# Output model for Chat Node to decide next step
-class ChatDecision(BaseModel):
-    """Decide whether to answer directly or call a tool."""
-    decision: Literal["respond", "call_market", "call_disease", "call_weather", "call_scheme"] = Field(
-        ..., description="Action to take. 'respond' if you can answer, or 'call_X' if you need data."
-    )
-    final_response: Optional[str] = Field(description="The final response to the user if decision is 'respond'.")
-    refined_query: Optional[str] = Field(description="The refined query to use for calling a tool, resolving pronouns or missing context from memory.")
-
 # --- Nodes ---
 
 def market_node(state: GraphState) -> GraphState:
     print("---MARKET NODE---")
     transcript = state["transcript"]
+    messages = state.get("messages", [])
+    history_str = "\n".join([f"{m.type}: {m.content}" for m in messages[-10:]]) # last 10 msgs
     
     # Extract args
     structured_llm = Base_llm.with_structured_output(MarketArgs)
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "Extract crop, location (district), and state from the user query. Default to empty string if not found."),
-        ("human", "{question}")
+        ("system", "Extract crop, location (district), and state from the user query. \n"
+                   "IMPORTANT: Check the conversation history to resolve pronouns like 'this', 'it', or 'that' to specific crop names or locations mentioned earlier.\n"
+                   "Default to empty string if not found."),
+        ("human", "History:\n{history}\n\nCurrent Query: {question}")
     ])
     chain = prompt | structured_llm
     try:
-        args = chain.invoke({"question": transcript})
+        args = chain.invoke({"question": transcript, "history": history_str})
     except:
         args = MarketArgs(crop="tomato") # Fallback
 
@@ -77,15 +73,18 @@ def disease_node(state: GraphState) -> GraphState:
 def weather_node(state: GraphState) -> GraphState:
     print("---WEATHER NODE---")
     transcript = state["transcript"]
+    messages = state.get("messages", [])
+    history_str = "\n".join([f"{m.type}: {m.content}" for m in messages[-10:]])
     
     structured_llm = Base_llm.with_structured_output(WeatherArgs)
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "Extract the Indian location/city from the query."),
-        ("human", "{question}")
+        ("system", "Extract the Indian location/city from the query.\n"
+                   "IMPORTANT: Check conversation history if location is implied or mentioned previously."),
+        ("human", "History:\n{history}\n\nCurrent Query: {question}")
     ])
     chain = prompt | structured_llm
     try:
-        args = chain.invoke({"question": transcript})
+        args = chain.invoke({"question": transcript, "history": history_str})
         loc = args.location
     except:
         loc = "Delhi" 
@@ -97,6 +96,12 @@ def weather_node(state: GraphState) -> GraphState:
 def scheme_node(state: GraphState) -> GraphState:
     print("---SCHEME NODE---")
     transcript = state["transcript"]
+    messages = state.get("messages", [])
+    history_str = "\n".join([f"{m.type}: {m.content}" for m in messages[-10:]])
+    
+    # Optional: could update to extract args if Find_scheme supported params
+    # For now, sticking to logic but ensuring context awareness isn't breaking anything
+    # Scheme tool logic is simple now, but let's keep it robust.
     
     if "detail" in transcript.lower() and "link" in transcript.lower():
         result = Find_scheme.invoke({})
@@ -129,13 +134,18 @@ def chat_node(state: GraphState) -> GraphState:
     Goal: Answer the user's question accurately.
     
     INSTRUCTIONS:
-    1. **CHECK MEMORY**: Look at the conversation history. If the user refers to something mentioned previously (e.g., "what about for tomato?" referring to a location mentioned before), resolve it.
-    2. **REFINE QUERY**: If you need to call a tool, generate a `refined_query` that is self-contained (includes location, crop, etc., from history).
-    3. **DECIDE**:
-        - If you HAVE `tool_data` clearly relevant to the question, USE IT to form your answer and set decision to 'respond'.
-        - If you DO NOT have the data and the user is asking about prices, weather, schemes, or disease, choose 'call_X'.
-        - If it is a general greeting or question you can answer from memory, set decision to 'respond'.
+    1. **CHECK MEMORY**: Look at history. Resolve pronouns (e.g., "what about for tomato?").
+    2. **DECIDE ACTION**:
+        - 'respond': If you can answer (greeting, general info, or you have 'tool_data').
+        - 'call_X': If you need data (market, weather, disease, scheme).
+    3. **OUTPUT JSON**:
+    {{
+      "decision": "respond" | "call_market" | "call_disease" | "call_weather" | "call_scheme",
+      "final_response": "Your answer here (if decision is respond)",
+      "refined_query": "Self-contained query for tool (if decision is call_X)"
+    }}
     
+    IMPORTANT: Do not output any thinking traces or tags like <think>...</think> in the final JSON. Output ONLY valid JSON.
     Reply in the user's language if not English.
     """
     
@@ -144,47 +154,68 @@ def chat_node(state: GraphState) -> GraphState:
     else:
         context_str = "No tool data yet."
     
-    # Format messages for context
     history_str = "\n".join([f"{m.type}: {m.content}" for m in messages])
 
     chat_prompt = ChatPromptTemplate.from_messages([
         ("system", system_msg),
-        ("human", f"Conversation History:\n{history_str}\n\nContext:\n{context_str}\n\nUser Query: {transcript}")
+        ("human", "Conversation History:\n{history}\n\nContext:\n{context}\n\nUser Query: {query}")
     ])
     
-    # 2. Invoke with Decision capability
-    structured_llm = Base_llm.with_structured_output(ChatDecision)
-    chain = chat_prompt | structured_llm
+    # 2. Invoke MANUALLY (No structured_output wrapper)
+    chain = chat_prompt | Base_llm
     
+    decision = "respond"
+    final_answer = ""
+    refined_query = None
+
     try:
-        result = chain.invoke({})
-        decision = result.decision
-        final_answer = result.final_response
-        refined_query = result.refined_query
+        response = chain.invoke({
+            "history": history_str,
+            "context": context_str,
+            "query": transcript
+        })
+        content_text = response.content
+        
+        # --- ROBUSTNESS IMPROVEMENT ---
+        # 1. Strip <think> tags if present in the raw output
+        content_text = re.sub(r'<think>.*?</think>', '', content_text, flags=re.DOTALL).strip()
+        
+        # 2. Try to find JSON block using regex
+        json_match = re.search(r'(\{.*\})', content_text, re.DOTALL)
+        if json_match:
+            clean_json = json_match.group(1)
+        else:
+            # Fallback to cleaning markdown
+            clean_json = content_text.replace("```json", "").replace("```", "").strip()
+        
+        try:
+            data = json.loads(clean_json)
+            decision = data.get("decision", "respond")
+            final_answer = data.get("final_response", "")
+            refined_query = data.get("refined_query")
+        except json.JSONDecodeError:
+            print("JSON Parse Failed. Using Cleaned Text.")
+            decision = "respond"
+            final_answer = content_text # Use the text stripped of <think>
+
     except Exception as e:
-        print(f"Chat decision error: {e}")
+        print(f"Chat execution error: {e}")
         decision = "respond"
         final_answer = "I'm having trouble processing that thought."
-        refined_query = None
 
     print(f"Chat Decision: {decision}")
 
     if decision == "respond":
-        if not final_answer:
-            direct_response = Base_llm.invoke([
-                SystemMessage(content=system_msg),
-                HumanMessage(content=f"History: {history_str}\nContext: {context_str}\nUser: {transcript}")
-            ])
-            final_answer = direct_response.content
-
+        # Final answer logic
+        if not final_answer: 
+             final_answer = "I'm here to help."
+             
         new_history = messages + [HumanMessage(content=transcript), AIMessage(content=final_answer)]
         return {"response": final_answer, "messages": new_history, "intent": "end"}
 
     else:
         # Route to tool
         new_intent = decision.replace("call_", "")
-        
-        # If we have a refined query, update transcript so the tool sees the full context
         updates = {"intent": new_intent}
         if refined_query:
             print(f"Refining query: {transcript} -> {refined_query}")
