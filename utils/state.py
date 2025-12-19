@@ -9,3 +9,4 @@ class GraphState(TypedDict):
     tool_data: Optional[Any]
     response: Optional[str]
     image_path: Optional[str]
+    loop_step: Optional[int]

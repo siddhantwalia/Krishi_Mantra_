@@ -41,8 +41,10 @@ def market_node(state: GraphState) -> GraphState:
     chain = prompt | structured_llm
     try:
         args = chain.invoke({"question": transcript, "history": history_str})
-    except:
-        args = MarketArgs(crop="tomato") # Fallback
+        if not args.crop: # Check if crop is empty string
+             return {"tool_data": "MISSING_CROP: The user did not specify a crop. Please ask them which crop they are interested in."}
+    except Exception as e:
+        return {"tool_data": f"Error extracting parameters: {str(e)}"}
 
     if "where" in transcript.lower() and "available" in transcript.lower():
         result = getCropLocations.invoke({"crop": args.crop})
@@ -86,8 +88,10 @@ def weather_node(state: GraphState) -> GraphState:
     try:
         args = chain.invoke({"question": transcript, "history": history_str})
         loc = args.location
-    except:
-        loc = "Delhi" 
+        if not loc:
+             return {"tool_data": "MISSING_LOCATION: The user did not specify a location. Please ask them which city or district they are asking about."}
+    except Exception as e:
+         return {"tool_data": f"Error extracting parameters: {str(e)}"} 
         
     result = Weather_tool.invoke({"location": loc})
     return {"tool_data": str(result)}
@@ -121,6 +125,21 @@ def chat_node(state: GraphState) -> GraphState:
     transcript = state["transcript"]
     intent = state.get("intent")
     tool_data = state.get("tool_data")
+    loop_step = state.get("loop_step", 0)
+    if loop_step is None: loop_step = 0
+    
+    # --- LOOP PROTECTION ---
+    if loop_step > 5:
+        return {
+            "response": "I'm sorry, I'm having trouble understanding. Could you please rephrase what you need clearly?",
+            "messages": messages + [HumanMessage(content=transcript), AIMessage(content="Loop limit reached.")],
+            "intent": "end",
+            "loop_step": 0
+        }
+
+    # Increment step for this turn
+    loop_step += 1
+
     language = state.get("language", "en")
     
     # 1. Prepare Prompt
@@ -135,9 +154,12 @@ def chat_node(state: GraphState) -> GraphState:
     
     INSTRUCTIONS:
     1. **CHECK MEMORY**: Look at history. Resolve pronouns (e.g., "what about for tomato?").
-    2. **DECIDE ACTION**:
-        - 'respond': If you can answer (greeting, general info, or you have 'tool_data').
-        - 'call_X': If you need data (market, weather, disease, scheme).
+    2. **HANDLE MISSING DATA**: 
+       - If 'tool_data' starts with "MISSING_X" (e.g., MISSING_CROP, MISSING_LOCATION), your decision MUST be 'respond'.
+       - In 'final_response', ask the user politely for the missing information.
+    3. **DECIDE ACTION**:
+        - 'respond': If you can answer (greeting, general info, clarifies missing info, or you have 'tool_data').
+        - 'call_X': If you need data (market, weather, disease, scheme) and you have the necessary parameters.
     3. **OUTPUT JSON**:
     {{
       "decision": "respond" | "call_market" | "call_disease" | "call_weather" | "call_scheme",
@@ -211,12 +233,13 @@ def chat_node(state: GraphState) -> GraphState:
              final_answer = "I'm here to help."
              
         new_history = messages + [HumanMessage(content=transcript), AIMessage(content=final_answer)]
-        return {"response": final_answer, "messages": new_history, "intent": "end"}
+        new_history = messages + [HumanMessage(content=transcript), AIMessage(content=final_answer)]
+        return {"response": final_answer, "messages": new_history, "intent": "end", "loop_step": 0}
 
     else:
         # Route to tool
         new_intent = decision.replace("call_", "")
-        updates = {"intent": new_intent}
+        updates = {"intent": new_intent, "loop_step": loop_step}
         if refined_query:
             print(f"Refining query: {transcript} -> {refined_query}")
             updates["transcript"] = refined_query
