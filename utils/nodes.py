@@ -67,10 +67,10 @@ def disease_node(state: GraphState) -> GraphState:
     # if "wheat" in transcript:
     result = Wheat_disease_detection.invoke({})
     # else:
-        # result = disease_Detect.invoke({})
+    result1 = disease_Detect.invoke({})
     os.remove(FIXED_IMAGE_PATH)    
-    print(result)
-    return {"tool_data": result}
+    print(result,result1)
+    return {"tool_data": {"wheat prediction": result, "general prediction": result1}}
 
 
 def weather_node(state: GraphState) -> GraphState:
@@ -169,6 +169,7 @@ def chat_node(state: GraphState) -> GraphState:
     }}
     
     IMPORTANT: Do not output any thinking traces or tags like <think>...</think> in the final JSON. Output ONLY valid JSON.
+    If the disease_detect node give a result saying the disease is unknown, in your final response, politely inform the user that the disease could not be identified and suggest consulting a local agricultural expert for further assistance.
     Reply in the user's language if not English.
     """
     
