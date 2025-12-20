@@ -64,11 +64,12 @@ def disease_node(state: GraphState) -> GraphState:
         return {"tool_data": "No image uploaded. Please upload an image of the affected plant."}
     
     transcript = state["transcript"].lower()
-    if "wheat" in transcript:
-        result = Wheat_disease_detection.invoke({})
-    else:
-        result = disease_Detect.invoke({})
-        
+    # if "wheat" in transcript:
+    result = Wheat_disease_detection.invoke({})
+    # else:
+        # result = disease_Detect.invoke({})
+    os.remove(FIXED_IMAGE_PATH)    
+    print(result)
     return {"tool_data": result}
 
 

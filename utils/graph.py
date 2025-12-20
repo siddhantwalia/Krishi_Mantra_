@@ -45,9 +45,6 @@ workflow.add_edge("disease", "chat")
 workflow.add_edge("weather", "chat")
 workflow.add_edge("scheme", "chat")
 
-# NEW: Conditional edges from chat_node (the "Smart Loop")
-# If chat_node decides to call a tool, it updates 'intent'.
-# If it answers, it sets 'intent': 'end'.
 workflow.add_conditional_edges(
     "chat",
     route_decision,

@@ -65,4 +65,4 @@ def predict_image_wheat(image_path: str, model: nn.Module, class_names: list[str
 class_names = ['Aphid', 'Black Rust', 'Blast', 'Brown Rust', 'Common Root Rot', 'Fusarium Head Blight', 'Healthy',
            'Leaf Blight', 'Mildew', 'Mite', 'Septoria', 'Smut', 'Stem fly', 'Tan spot', 'Yellow Rust']
 
-wheat_model_path = os.getenv("WHEAT_MODE_PATH")
+wheat_model_path = os.getenv("WHEAT_MODEL_PATH")

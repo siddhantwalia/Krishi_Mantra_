@@ -21,7 +21,7 @@ def text_to_speech(text: str) -> bytes | None:
         audio_bytes = response.read()
 
         # Optional: save to file
-        speech_file_path = Path(__file__).parent / "speech.wav"
+        speech_file_path = "speech.wav"
         with open(speech_file_path, "wb") as f:
             f.write(audio_bytes)
 
